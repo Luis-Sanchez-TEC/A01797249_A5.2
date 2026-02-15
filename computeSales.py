@@ -7,13 +7,14 @@ import time
 
 
 def load_json_data(file_path):
-    """Carga datos desde un archivo JSON con manejo de errores."""
+    """Carga datos desde un archivo JSON con diagnóstico."""
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError) as error:
         print(f"Error al procesar {file_path}: {error}")
     return None
+
 
 def calculate_total(prices_list, sales_list):
     """Calcula el costo total usando las llaves exactas del JSON."""
@@ -22,41 +23,47 @@ def calculate_total(prices_list, sales_list):
     price_map = {item.get('title'): item.get('price') for item in prices_list}
 
     for sale in sales_list:
-        # Usamos 'Product' y 'Quantity' con MAYÚSCULA como en tu archivo
+        if not isinstance(sale, dict):
+            continue
+
         product_name = sale.get('Product')
         quantity = sale.get('Quantity', 0)
-
-        # Obtenemos el precio del mapa usando el nombre del producto
         price = price_map.get(product_name)
 
         if price is not None:
             total += price * quantity
         else:
-            # Req 3: Manejo de errores para datos no encontrados
             if product_name is not None:
-                print(f"Error: El producto '{product_name}' no está en el catálogo.")
-            else:
-                print("Error: Registro de venta con formato inválido encontrado.")
-
+                print(f"Error: Producto '{product_name}' no en catálogo.")
     return total
 
+
 def main():
-    """Función principal."""
+    """Función principal para coordinar la ejecución del programa."""
     start_time = time.time()
 
     if len(sys.argv) != 3:
-        print("Uso: python computeSales.py catálogo.json ventas.json")
+        print("Uso: python3 computeSales.py catálogo.json ventas.json")
         return
 
-    prices = load_json_data(sys.argv[1])
-    sales = load_json_data(sys.argv[2])
+    prices_data = load_json_data(sys.argv[1])
+    sales_data = load_json_data(sys.argv[2])
 
-    if prices is not None and sales is not None:
-        total = calculate_total(prices, sales)
-        print(f"Cálculo completado. Total: {total:2f}")
-
+    if prices_data is not None and sales_data is not None:
+        total = calculate_total(prices_data, sales_data)
         elapsed_time = time.time() - start_time
-        print(f"Tiempo: {elapsed_time} segundos")
+
+        results = (
+            f"TOTAL DE VENTAS: ${total:,.2f}\n"
+            f"TIEMPO DE EJECUCIÓN: {elapsed_time:.4f} segundos"
+        )
+
+        print(results)
+
+        with open("SalesResults.txt", "w", encoding='utf-8') as f:
+            f.write(results)
+    else:
+        print("Error: No se pudieron procesar los archivos.")
 
 
 if __name__ == "__main__":
